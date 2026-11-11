@@ -501,12 +501,12 @@ button.row:active,.row button.m:active{background:var(--line2)}
 <div id="print"></div>
 <input type="file" id="inCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="inGal" accept="image/*" multiple hidden>
-<input type="file" id="inJson" accept=".json,application/json" hidden>
+<input type="file" id="inJson" accept=".json,.txt,application/json,text/plain" hidden>
 
 <script>
 'use strict';
 /* Bitácora HVAC · Bisonte — © 2026 Bisonte. Todos los derechos reservados. */
-const APP_VERSION = '4.7.0';
+const APP_VERSION = '4.8.0';
 const SB_URL = 'https://fdpravuvrwcgozbdhuua.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkcHJhdnV2cndjZ296YmRodXVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NDc3MDYsImV4cCI6MjA4NzIyMzcwNn0.R0M8rZp9iBzrzybIQmIqPDcpAJXMjVwnORe5UmcB5Vg';
 const COMPANY = {name: 'Bisonte Ingeniería', web: 'www.bisonteingenieria.com', tel: '55 4392 2863'};
@@ -808,7 +808,7 @@ function toast(msg, type = '') {
   const d = document.createElement('div'); d.className = type; d.textContent = msg; $('#toast').appendChild(d);
   setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 300); }, 2800);
 }
-let SHEET = null;
+let IMP = null, SHEET = null;
 function openSheet(title, body, actions, opt = {}) {
   const sh = $('#sheet');
   sh.innerHTML = `<div class="pn${opt.full ? ' full' : ''}" role="dialog" aria-label="${esc(title)}"><div class="hd"><span>${esc(title)}</span><button class="ib" onclick="closeSheet()" aria-label="Cerrar">${ic('x')}</button></div><div class="bdy">${body}</div>${actions ? `<div class="ft">${actions}</div>` : ''}</div>`;
@@ -864,7 +864,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && i >= 0) { e.preventDefault(); sugPick(SUGB._inp, bs[i].dataset.v); }
 });
 document.addEventListener('input', e => { if (e.target.dataset?.sug && !e.target._pick && document.activeElement === e.target) sugShow(e.target, true); });
-document.addEventListener('input', e => { const k = e.target.dataset?.eq; if (k && FORM?.eq) { FORM.eq[k] = e.target.value; updateCounts(); save(); } });
+document.addEventListener('input', e => { const k = e.target.dataset?.eq; if (k && FORM?.eq) { FORM.eq[k] = e.target.value; FORM.eq.updAt = Date.now(); updateCounts(); save(); } });
 document.addEventListener('input', e => {
   const el = e.target, b = el.dataset && el.dataset.b; if (!b) return;
   const o = target(el); if (!o) return;
@@ -902,6 +902,7 @@ function vClients() {
   let h = `<div class="card" style="padding:0"><div class="home"><img src="assets/bisonte-horizontal.png" alt="Bisonte Ingeniería"><div><b>Bitácora HVAC</b><small>Levantamiento y servicio en sitio</small></div></div>
     <div class="kpis"><div><b>${S.clients.length}</b><small>Clientes</small></div><div><b>${nEq}</b><small>Equipos</small></div><div><b>${nToday}</b><small>Servicios hoy</small></div><div><b class="${nBad ? 'badc' : ''}">${nBad}</b><small>En falla</small></div></div></div>`;
   h += installBanner();
+  { const n = pendingBackup(); if (n && S.logs.length) h += `<button class="hint warn w" style="text-align:left;display:block;margin:0 0 12px" onclick="A.backup()"><b>${n} cambio${n > 1 ? 's' : ''} sin guardar en Drive.</b> Toca para guardar.</button>`; }
   h += `<div class="row2"><button class="btn pri big" onclick="A.clientSheet()">${ic('plus')} Nuevo cliente</button><button class="btn big" onclick="go('/hoy')">${ic('today')} Agenda</button></div>`;
   h += `<h2 class="sec">Clientes <span class="badge">${S.clients.length}</span></h2>`;
   if (S.clients.length > 4) h += `<div class="search">${ic('search')}<input class="t" type="search" placeholder="Buscar cliente" oninput="filterList(this.value,'.list .row')"></div>`;
@@ -1632,9 +1633,16 @@ function vCfg() {
     ${cfg.syncErr ? `<div class="hint bad">Último error: ${esc(cfg.syncErr)}</div>` : ''}
     <button class="btn pri w" style="margin-top:10px" onclick="syncNow(true)" ${cfg.sync ? '' : 'disabled'}>${ic('up')} Subir ahora</button>
     <details style="margin-top:10px"><summary class="small muted">Configuración avanzada</summary><label class="fld" style="margin-top:8px"><span>URL Supabase</span><input class="t" value="${esc(cfg.sbUrl)}" onchange="S.cfg.sbUrl=this.value.trim();SB=null;save()"></label><label class="fld" style="margin-top:8px"><span>Clave pública (anon)</span><input class="t" value="${esc(cfg.sbKey)}" onchange="S.cfg.sbKey=this.value.trim();SB=null;save()"></label></details></div>
+  <h2 class="sec">Google Drive · otro teléfono</h2><div class="card">
+    <p class="tip" style="margin-top:0">Los datos viven en este teléfono. Guarda el archivo en tu Drive (incluye fotos y firmas) y ábrelo en otro teléfono para seguir trabajando ahí.</p>
+    ${backupHint()}
+    <div class="btns" style="margin-top:10px"><button class="btn pri" onclick="A.backup()">${ic('up')} Guardar en Drive</button><button class="btn" onclick="$('#inJson').click()">${ic('down')} Abrir desde Drive</button></div>
+    <details style="margin-top:10px"><summary class="small muted">¿Cómo se usa?</summary><ol class="small" style="margin:8px 0 0;padding-left:18px;line-height:1.6">
+      <li><b>Guardar en Drive</b> → en el menú de compartir elige <b>Drive</b> → Subir. En computadora se descarga el archivo; súbelo a tu Drive.</li>
+      <li>En el otro teléfono: Ajustes → <b>Abrir desde Drive</b> → Drive → elige el archivo más reciente (<i>Bitacora_HVAC_fecha_hora</i>) → <b>Combinar</b>.</li>
+      <li>Al terminar allá, guarda de nuevo en Drive y combínalo en el primer teléfono.</li></ol></details>
+  </div>
   <h2 class="sec">Datos</h2><div class="card">
-    <p class="tip" style="margin-top:0">Los datos viven en este teléfono. Exporta un respaldo (incluye fotos) con frecuencia.</p>
-    <div class="btns" style="margin-top:10px"><button class="btn" onclick="A.backup()">${ic('down')} Exportar respaldo</button><button class="btn" onclick="$('#inJson').click()">${ic('up')} Importar respaldo</button></div>
     ${hasOld ? `<button class="btn w" style="margin-top:8px" onclick="A.importOldLocal()">Traer datos de la versión anterior</button>` : ''}
     <button class="btn bad w" style="margin-top:8px" onclick="A.wipe()">${ic('trash')} Borrar todos los datos</button></div>
   <h2 class="sec">Instalación</h2><div class="card">${installHelp()}</div>
@@ -1667,6 +1675,11 @@ let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (!route().length && $('#sheet').hidden) render(); });
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function pendingBackup() { const t = S.cfg.lastBackup || 0; return S.logs.filter(l => (l.savedAt || 0) > t).length + S.equipments.filter(e => (e.updAt || 0) > t).length + S.clients.filter(c => (c.updAt || 0) > t).length; }
+function backupHint() {
+  const n = pendingBackup(), t = S.cfg.lastBackup;
+  return `<div class="hint ${n ? 'warn' : 'ok'}">${t ? 'Último guardado: ' + new Date(t).toLocaleString('es-MX') + '. ' : 'Aún no has guardado en Drive. '}${n ? `<b>${n} cambio${n > 1 ? 's' : ''} sin guardar.</b>` : 'Todo guardado.'}</div>`;
+}
 function installBanner() {
   if (isStandalone()) return '';
   try { if (localStorage.getItem('hvac_noinst')) return ''; } catch (e) {}
@@ -1741,11 +1754,13 @@ window.addEventListener('offline', setNet);
 setInterval(() => { if (document.visibilityState === 'visible') syncNow(); }, 120000);
 
 /* ---------- archivos ---------- */
-async function shareFile(name, blob) {
-  const f = new File([blob], name, {type: blob.type});
-  if (navigator.canShare && navigator.canShare({files: [f]})) { try { await navigator.share({files: [f], title: name}); return; } catch (e) { if (e.name === 'AbortError') return; } }
+async function shareFile(name, blob, alt) {
+  const fs = [new File([blob], name, {type: blob.type})]; if (alt) fs.push(new File([blob], alt, {type: 'text/plain'}));
+  const f = navigator.canShare && fs.find(x => navigator.canShare({files: [x]}));
+  if (f) { try { await navigator.share({files: [f], title: f.name}); return true; } catch (e) { if (e.name === 'AbortError') return false; } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  return true;
 }
 const blobToData = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
 const dataToBlob = async d => (await fetch(d)).blob();
@@ -1813,6 +1828,7 @@ const A = {
   clientSave() {
     const o = SHEET; if (!o.name.trim()) return toast('Escribe el nombre del cliente', 'bad');
     o.name = o.name.trim();
+    o.updAt = Date.now();
     if (o.id) Object.assign(clientById(o.id), o); else { o.id = nid(); S.clients.push(o); }
     save(); closeSheet(); toast('Cliente guardado', 'ok');
     if (route()[0] === 'c') render(); else go('/c/' + o.id);
@@ -1986,6 +2002,7 @@ const A = {
     o.capacity = String(o.capacity || '').replace(',', '.');
     if (o.role !== 'evap') o.condId = '';
     if (o.condId) o.condId = +o.condId;
+    o.updAt = Date.now();
     if (o.id) { const e = eqById(o.id); if (e.role === 'cond' && o.role !== 'cond') evapsOf(e.id).forEach(x => x.condId = ''); Object.assign(e, o); }
     else { o.id = nid(); o.photos ||= []; S.equipments.push(o); }
     if (link && eqById(link)) eqById(link).condId = o.id;
@@ -2229,14 +2246,20 @@ const A = {
     S.equipments.forEach(e => (e.photos || []).forEach(p => ids.add(p.id)));
     Object.values(S.drafts).forEach(d => (d.parts ? Object.values(d.parts) : [d]).forEach(x => (x.photos || []).forEach(p => ids.add(p.id))));
     for (const id of ids) { const b = await DB.get('photos', id); if (b) photos[id] = await blobToData(b); }
-    shareFile(`Respaldo_HVAC_${today()}.json`, new Blob([JSON.stringify({app: 'bisonte-hvac', v: 1, exported: new Date().toISOString(), state: S, photos})], {type: 'application/json'}));
+    const stamp = today() + '_' + hhmm().replace(':', ''), nm = `Bitacora_HVAC_${stamp}`;
+    const ok = await shareFile(nm + '.json', new Blob([JSON.stringify({app: 'bisonte-hvac', v: 1, exported: new Date().toISOString(), device: S.cfg.tech || '', state: S, photos})], {type: 'application/json'}), nm + '.bisonte.txt');
+    if (ok) { S.cfg.lastBackup = Date.now(); save(); if (route()[0] === 'cfg' || !route()[0]) render(); }
   },
   async importFile(file) {
     try {
       const o = JSON.parse(await file.text());
       let st;
       if (o.app === 'bisonte-hvac' && o.state) {
-        if (!confirm(`Se reemplazarán los datos de este teléfono por el respaldo del ${new Date(o.exported).toLocaleString('es-MX')}. ¿Continuar?`)) return;
+        if (!o.replace) { IMP = o; const c = o.state; return openSheet('Abrir respaldo', `<p>Respaldo del <b>${esc(new Date(o.exported).toLocaleString('es-MX'))}</b>${o.device ? ' · ' + esc(o.device) : ''}: ${(c.clients || []).length} clientes, ${(c.equipments || []).length} equipos y ${(c.logs || []).length} servicios.</p>
+          <div class="hint ok"><b>Combinar (recomendado):</b> junta lo del archivo con lo de este teléfono. No se pierde nada; si un mismo servicio o equipo está en los dos, se queda la versión más reciente.</div>
+          <div class="hint warn"><b>Reemplazar todo:</b> borra lo de este teléfono y deja solo lo del archivo.</div>`,
+          `<button class="btn" onclick="A.importApply(true)">Reemplazar todo</button><button class="btn pri" onclick="A.importApply(false)">Combinar</button>`); }
+        if (!confirm('Se borrarán los datos de este teléfono y quedará solo el respaldo. ¿Continuar?')) return;
         await DB.clear('photos');
         for (const [id, d] of Object.entries(o.photos || {})) await DB.put('photos', +id, await dataToBlob(d));
         st = o.state; st.cfg = {...S.cfg, ...st.cfg, theme: S.cfg.theme};
@@ -2246,6 +2269,22 @@ const A = {
       } else return toast('El archivo no es un respaldo válido', 'bad');
       S = st; normalize(); await save(true); toast('Datos importados', 'ok'); location.replace('#/'); render();
     } catch (e) { toast('No se pudo leer el archivo: ' + e.message, 'bad'); }
+  },
+  async importApply(replace) {
+    const o = IMP; IMP = null; closeSheet(); if (!o) return;
+    if (replace) { o.replace = true; return A.importFile({text: async () => JSON.stringify(o)}); }
+    try {
+      const st = o.state, n = {c: 0, e: 0, l: 0};
+      const merge = (mine, theirs, key, newer) => { const m = new Map(mine.map(x => [String(x.id), x])); (theirs || []).forEach(x => { const cur = m.get(String(x.id)); if (!cur) { m.set(String(x.id), x); n[key]++; } else if (newer(x, cur)) m.set(String(x.id), x); }); return [...m.values()]; };
+      const byUpd = (x, c) => (x.updAt || 0) > (c.updAt || 0), bySaved = (x, c) => (x.savedAt || 0) > (c.savedAt || 0);
+      S.clients = merge(S.clients, st.clients, 'c', byUpd);
+      S.equipments = merge(S.equipments, st.equipments, 'e', byUpd);
+      S.logs = merge(S.logs, st.logs, 'l', bySaved);
+      Object.entries(st.signs || {}).forEach(([k, v]) => { if (!S.signs[k] || (v.at || 0) > (S.signs[k].at || 0)) S.signs[k] = v; });
+      for (const [id, d] of Object.entries(o.photos || {})) if (!(await DB.get('photos', +id))) await DB.put('photos', +id, await dataToBlob(d));
+      normalize(); await save(true); render();
+      toast(`Combinado: ${n.c} clientes, ${n.e} equipos y ${n.l} servicios nuevos`, 'ok');
+    } catch (e) { toast('No se pudo combinar: ' + e.message, 'bad'); }
   },
   async importOldLocal() {
     try {

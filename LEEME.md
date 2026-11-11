@@ -1,4 +1,4 @@
-# Bitácora HVAC 4.7 · Bisonte
+# Bitácora HVAC 4.8 · Bisonte
 
 App para levantamiento y servicio de **minisplits** y otros equipos HVAC en sitio. Se instala en **iPhone y Android** como app (PWA) y **funciona sin internet**.
 
@@ -76,6 +76,12 @@ Diseño tipo hoja de cálculo: cuadrícula fina, sin rellenos de color; el color
 - **Cotización** en PDF desde la pantalla del cliente (`../Ejemplo cotizacion HVAC.pdf`).
 - Ejemplos de muestra: `../Ejemplo reporte HVAC.pdf` (servicio de un sistema) y `../Ejemplo reporte general HVAC.pdf` (todos los sistemas del cliente).
 - También: resumen por WhatsApp y Excel (CSV).
+
+## Google Drive: seguir en otro teléfono
+- **Ajustes → Guardar en Drive:** crea el archivo `Bitacora_HVAC_fecha_hora` con todos los datos, fotos y firmas. En el teléfono se abre el menú de compartir: elige **Drive**. En computadora se descarga y lo subes a tu Drive.
+- **Ajustes → Abrir desde Drive** en el otro teléfono: eliges el archivo más reciente y luego **Combinar** (junta ambos teléfonos; si un servicio o equipo está en los dos, queda la versión más reciente) o **Reemplazar todo**.
+- La pantalla de inicio avisa cuántos cambios no se han guardado en Drive.
+- Combinar no borra: lo que elimines en un teléfono no se elimina en el otro.
 
 ## Nube (Supabase)
 Para guardar todo el detalle, agrega esta columna una sola vez (Supabase → SQL Editor):
