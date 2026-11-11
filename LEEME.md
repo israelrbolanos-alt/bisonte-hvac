@@ -1,4 +1,4 @@
-# Bitácora HVAC 4.6 · Bisonte
+# Bitácora HVAC 4.7 · Bisonte
 
 App para levantamiento y servicio de **minisplits** y otros equipos HVAC en sitio. Se instala en **iPhone y Android** como app (PWA) y **funciona sin internet**.
 
@@ -23,9 +23,10 @@ App para levantamiento y servicio de **minisplits** y otros equipos HVAC en siti
 - **Otro equipo:** multi-split (una exterior con varias interiores), equipo completo (paquete, ventana…) o unidad interior suelta.
 
 ## En sitio: lo que pide un técnico de campo (v4.6)
-- **Modo Rápido / Completo** (arriba del formulario). *Rápido* deja solo lo esencial del preventivo: temperaturas, CFM directo, voltaje, consumo, capacitor, succión, gas agregado y prueba de fugas. *Completo* agrega anemómetro, velocidad del ventilador, consumo del ventilador, capacitor del ventilador, descarga y temperaturas de tubería. Lo capturado no se pierde al cambiar de modo.
+- **Modo Rápido / Completo** (arriba del formulario). *Rápido* deja solo lo esencial del preventivo: temperaturas, CFM directo, voltaje, corriente, succión, gas agregado y prueba de fugas. *Completo* agrega anemómetro, velocidad del ventilador, descarga y temperaturas de tubería. Lo capturado no se pierde al cambiar de modo.
+- **Mediciones eléctricas:** solo voltaje (V) y corriente (A).
+- **Datos de placa** en cada unidad: marca (con menú), modelo y número de serie. Se guardan en la ficha del equipo y salen en el reporte.
 - **Componentes en Bueno por defecto:** solo se cambia el que tenga falla. El contador dice *Todo bien* o *1 con falla*.
-- **Capacitor (µF):** nominal y medido; se marca fuera de rango con ±6 % (editable en valores de referencia). El nominal se recuerda para el siguiente servicio.
 - **Código de error:** escribe lo que muestra el display (E1, P4, CH05 o solo 5 en LG) y aparece su significado para Midea / Carrier, Gree y LG. Es referencia general: confirmar con el manual del modelo.
 - **Gas agregado y prueba de fugas** (Sin fuga / Con fuga / No se revisó). *Con fuga* marca el sistema como "Requiere atención".
 - **Material utilizado:** botones rápidos (capacitor, refrigerante, filtro, cinta, contactor, tarjeta, motor, sensor, bomba, mano de obra) con cantidad y unidad.
@@ -62,12 +63,13 @@ En **Nuevo cliente / Editar cliente**, el botón **Usar mi ubicación actual** t
 - La **presión de gas** se captura en la pestaña de la unidad exterior. En equipos sin unidad exterior registrada se captura en la misma unidad interior.
 
 ## Reporte PDF
+Diseño tipo hoja de cálculo: cuadrícula fina, sin rellenos de color; el color va solo en el texto (verde correcto, ámbar revisar, rojo fuera de rango).
 - **Hoja 1 · Resumen**:
   - estado general en lenguaje sencillo, hallazgos y recomendaciones;
   - datos del cliente y lista de sistemas atendidos con su resultado;
   - cómo leer el reporte y firmas.
 - **Una hoja por sistema**, siempre completa:
-  - tabla con las unidades lado a lado (interior/es y exterior), cada medición contra su rango recomendado;
+  - tabla con las unidades lado a lado (interior/es y exterior): marca, modelo, número de serie, capacidad y ubicación, y cada medición contra su rango recomendado;
   - trabajos realizados, componentes con observaciones, notas y hasta 4 fotos (primero las de fallas y las marcadas).
   - Si el contenido no cabe, la hoja se reduce a escala para que el sistema quede en una sola página.
 - **Anexo fotográfico** al final con las demás fotos.

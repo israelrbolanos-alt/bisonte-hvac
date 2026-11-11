@@ -415,6 +415,24 @@ button.row:active,.row button.m:active{background:var(--line2)}
 .rp .thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .rp .thumbs figure{margin:0;border:1px solid #d5dae1;break-inside:avoid}
 .rp .thumbs img{width:100%;height:92px;object-fit:cover;display:block}
+.rp{font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;color:#1f2328}
+.rp .tb th,.rp .tb td,.rp-h .doc td,.rp .sum,.rp .sum-t td,.rp .sum-l,.rp .sg,.rp .txt,.rp .pics figure,.rp .thumbs figure,.rp .legend,.rp .alert{border-color:#b7bec7!important}
+.rp .tb th,.rp-h .doc td:first-child,.rp .lab td:nth-child(odd),.rp .sum-st,.rp .sum-t td:nth-child(odd),.rp .legend,.rp .alert,.rp .qt .tl td,.rp .mx td.v-warn,.rp .mx td.v-bad,.rp .unit-h{background:none!important}
+.rp .tb th{color:#19408F;font-weight:700}
+.rp-h .doc td:first-child,.rp .lab td:nth-child(odd),.rp .sum-t td:nth-child(odd){color:#19408F;font-weight:600}
+.rp .sum-st{border-left:0!important;border-bottom:1px solid #b7bec7}
+.rp .alert{border-left-width:1px!important}
+.rp .unit-h{color:#19408F;border:1px solid #b7bec7;border-bottom:2px solid #19408F}
+.rp .unit-h span{opacity:1;color:#3d4450}
+.rp .ev::before{display:none}
+.rp .ev{gap:0}
+.rp .wl li::before{background:none}
+.rp .wl li::after{border-color:#19408F}
+.rp .mx tr.inf td{color:#1f2328}
+.rp .mx tr.inf td:first-child{color:#19408F;font-weight:600}
+.rp .mx tr.inf td.na{color:#9aa1ab}
+.rp .mx tr.sub th{text-align:left;color:#19408F;border-top:2px solid #19408F}
+.rp .mx th.uh small{color:#5b6370}
 .rp .thumbs figcaption{font-size:7.5pt;padding:2px 5px;border-top:1px solid #d5dae1;color:#3d4450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rp .pg .rf{margin-top:10px}
 @media print{
@@ -488,7 +506,7 @@ button.row:active,.row button.m:active{background:var(--line2)}
 <script>
 'use strict';
 /* Bitácora HVAC · Bisonte — © 2026 Bisonte. Todos los derechos reservados. */
-const APP_VERSION = '4.6.2';
+const APP_VERSION = '4.7.0';
 const SB_URL = 'https://fdpravuvrwcgozbdhuua.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkcHJhdnV2cndjZ296YmRodXVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NDc3MDYsImV4cCI6MjA4NzIyMzcwNn0.R0M8rZp9iBzrzybIQmIqPDcpAJXMjVwnORe5UmcB5Vg';
 const COMPANY = {name: 'Bisonte Ingeniería', web: 'www.bisonteingenieria.com', tel: '55 4392 2863'};
@@ -846,6 +864,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && i >= 0) { e.preventDefault(); sugPick(SUGB._inp, bs[i].dataset.v); }
 });
 document.addEventListener('input', e => { if (e.target.dataset?.sug && !e.target._pick && document.activeElement === e.target) sugShow(e.target, true); });
+document.addEventListener('input', e => { const k = e.target.dataset?.eq; if (k && FORM?.eq) { FORM.eq[k] = e.target.value; updateCounts(); save(); } });
 document.addEventListener('input', e => {
   const el = e.target, b = el.dataset && el.dataset.b; if (!b) return;
   const o = target(el); if (!o) return;
@@ -1082,7 +1101,7 @@ async function openDraw(key, idx) {
 /* ---------- formulario de servicio ---------- */
 function newDraft(eq, shared) {
   const prev = lastLog(eq.id), pc = prev?.cfm && !prev.cfm.rows ? prev.cfm : null, pd = prev?.data || {};
-  return {kind: 'Preventivo', date: today(), time: hhmm(), tech: S.cfg.tech, signature: '', signName: '', ...(shared || {}), data: {capNom: pd.capNom || '', capFanNom: pd.capFanNom || ''}, works: [], materials: [], quote: [],
+  return {kind: 'Preventivo', date: today(), time: hhmm(), tech: S.cfg.tech, signature: '', signName: '', ...(shared || {}), data: {}, works: [], materials: [], quote: [],
     cfm: {mode: pc?.mode || 'cfm', vunit: pc?.vunit || 'fpm', unit: eq.outUnit || pc?.unit || 'in', w: eq.outW || pc?.w || '', h: eq.outH || pc?.h || '', v: '', cfm: '', fan: pc?.fan || 'Alta'},
     components: (COMPS[eq.role] || COMPS.paq).map(n => ({name: n, status: 'Bueno', obs: ''})), photos: [], comments: '', needsCorrective: false, correctiveDetails: '', recommend: ''};
 }
@@ -1128,6 +1147,8 @@ function vForm(key) {
   h += sec('serv', 'clip', 'Datos del servicio', !d.tech, `${chips('kind', KINDS, d.kind)}
     <div class="grid" style="margin-top:10px">${fld('Fecha', 'date', d.date, {type: 'date'})}${fld('Hora', 'time', d.time, {type: 'time'})}${fld('Técnico', 'tech', d.tech, {full: true, ph: 'Nombre del técnico'})}</div>${parts ? '<p class="tip">Estos datos y la firma son los mismos para todo el sistema.</p>' : ''}`);
   h += sec('works', 'tool', 'Trabajos realizados', true, chips('works', WORKS[R] || WORKS.paq, d.works, 'class="checks" data-multi') + `<label class="fld" style="margin-top:10px"><span>Otro trabajo</span><input class="t" data-b="worksOther" value="${esc(d.worksOther)}" placeholder="Opcional"></label>`);
+  const eqF = (l, k, o = {}) => fld(l, k, eq[k] || '', o).replace('data-b="', 'data-eq="');
+  h += sec('placa', 'list', 'Datos de placa', !(eq.model && eq.serial), `<div class="grid">${eqF('Marca', 'brand', {sug: 'brand', ph: 'Mirage, LG…'})}${eqF('Modelo', 'model', {ph: 'Ver etiqueta'})}${eqF('Número de serie', 'serial', {full: true, ph: 'Ver etiqueta'})}</div><p class="tip">Se guardan en la ficha de ${esc(eq.unitId)} y salen en el reporte. Para no equivocarte, toma también una foto de la placa.</p>`);
   const full = R !== 'evap' || !condOf(eq); // interior sin unidad exterior registrada: también lleva eléctrico y presión de gas
   if (R !== 'cond') {
     if (Q && d.cfm.mode === 'vel' && !num(d.cfm.v)) d.cfm.mode = 'cfm';
@@ -1140,12 +1161,9 @@ function vForm(key) {
     ${Q ? '' : `<span class="lbl">Velocidad del ventilador</span>${chips('cfm.fan', ['Baja', 'Media', 'Alta', 'Turbo'], d.cfm.fan, 'class="seg"')}`}
     <div id="cfmSum"></div>`);
   }
-  const capF = (lbl, k, nk, ph) => `<span class="lbl">${lbl}</span><div class="grid">${fld('Nominal (µF)', 'data.' + nk, D[nk], {num: 1, ph})}${fld('Medido (µF)', 'data.' + k, D[k], {num: 1, ph: 'medir', rk: k})}</div>`;
-  if (full) h += sec('elec', 'bolt', 'Mediciones eléctricas y capacitor', true, `
-    <div class="grid${Q ? '' : ' g3'}">${fld('Voltaje (V)', 'data.volts', D.volts, {num: 1, ph: '220', rk: 'volts'})}${fld('Consumo compresor (A)', 'data.amps', D.amps, {num: 1, ph: '8.5', rk: 'amps'})}${Q ? '' : fld('Consumo ventilador (A)', 'data.ampsFan', D.ampsFan, {num: 1, ph: '0.8'})}</div>
-    ${capF('Capacitor del compresor', 'capMed', 'capNom', '35')}${Q ? '' : capF('Capacitor del ventilador', 'capFanMed', 'capFanNom', '5')}
-    <p class="tip">El valor nominal viene en la etiqueta del capacitor y se recuerda para el siguiente servicio. Tolerancia ±6 %.</p>`);
-  else if (!Q) h += sec('elec', 'bolt', 'Mediciones eléctricas (opcional)', false, `<div class="grid">${fld('Voltaje (V)', 'data.volts', D.volts, {num: 1, ph: '220', rk: 'volts'})}${fld('Consumo ventilador (A)', 'data.ampsFan', D.ampsFan, {num: 1, ph: '0.3'})}</div>`);
+  const elecF = `<div class="grid">${fld('Voltaje (V)', 'data.volts', D.volts, {num: 1, ph: '220', rk: 'volts'})}${fld('Corriente (A)', 'data.amps', D.amps, {num: 1, ph: full ? '8.5' : '0.5', rk: 'amps'})}</div>`;
+  if (full) h += sec('elec', 'bolt', 'Mediciones eléctricas', true, elecF);
+  else if (!Q) h += sec('elec', 'bolt', 'Mediciones eléctricas (opcional)', false, elecF);
   if (full) h += sec('ref', 'therm', `Gas refrigerante${gasOf(eq) ? ' · ' + esc(gasOf(eq)) : ''}`, true, `
     <div class="grid">${fld('Temp. exterior (°C)', 'data.tempAmb', D.tempAmb, {num: 1, ph: '30'})}${fld('Succión / baja (psi)', 'data.psiLow', D.psiLow, {num: 1, ph: '120', rk: 'psiLow'})}
     ${Q ? '' : fld('Descarga / alta (psi)', 'data.psiHigh', D.psiHigh, {num: 1, ph: 'opcional', rk: 'psiHigh'}) + fld('Temp. tubo succión (°C)', 'data.tempSuct', D.tempSuct, {num: 1, ph: '10', rk: 'tempSuct'}) + fld('Temp. tubo líquido (°C)', 'data.tempLiq', D.tempLiq, {num: 1, ph: '35', rk: 'tempLiq'})}
@@ -1248,11 +1266,12 @@ function updateCounts() {
   const set = (id, txt, cls = '') => { const el = $('#n-' + id); if (el) { el.textContent = txt; el.className = 'badge cnt ' + cls; } };
   const frac = (id, a, b) => set(id, b ? `${a}/${b}` : '', a === b && b ? 'ok' : '');
   frac('serv', [d.kind, d.date, d.tech].filter(f).length, 3);
+  frac('placa', [FORM.eq.brand, FORM.eq.model, FORM.eq.serial].filter(f).length, 3);
   set('works', d.works.length ? String(d.works.length) : '', d.works.length ? 'acc' : '');
   const Q = (S.cfg.fmode || 'rapido') === 'rapido';
   if (R !== 'cond') { const ks = Q ? [D.tempSupply, D.tempReturn] : [D.tempSupply, D.tempReturn, cfmOf(d.cfm)]; frac('air', ks.filter(f).length, ks.length); }
   const full = R !== 'evap' || !condOf(FORM.eq);
-  const ek = !full ? ['volts', 'ampsFan'] : Q ? ['volts', 'amps', 'capMed'] : ['volts', 'amps', 'ampsFan', 'capMed'];
+  const ek = ['volts', 'amps'];
   frac('elec', ek.filter(k => f(D[k])).length, ek.length);
   if (full) { const rk = Q ? ['tempAmb', 'psiLow'] : ['tempAmb', 'psiLow', 'tempSuct']; frac('ref', rk.filter(k => f(D[k])).length, rk.length); }
   set('err', D.errCode ? String(D.errCode).toUpperCase() : '', D.errCode ? 'bad' : '');
@@ -1337,7 +1356,7 @@ const REF_INFO = {
   dt: {l: 'Enfriamiento del aire (diferencia)', u: '°C', d: 1, h: 'Grados que enfría el equipo al aire.'},
   cfm: {l: 'Flujo de aire', u: 'CFM', d: 0, h: 'Aire que mueve el equipo (pies³/min).'},
   volts: {l: 'Voltaje de alimentación', u: 'V', d: 0, h: 'Tensión que recibe el equipo.'},
-  amps: {l: 'Consumo del compresor', u: 'A', d: 1, h: 'Debe quedar por debajo del límite de su protección.'},
+  amps: {l: 'Corriente', u: 'A', d: 1, h: 'Debe quedar por debajo del límite de su protección.'},
   ampsFan: {l: 'Consumo del ventilador', u: 'A', d: 1, h: 'Corriente del motor del ventilador.'},
   psiLow: {l: 'Presión de gas · succión (baja)', u: 'psi', d: 0, h: 'Presión del refrigerante en la línea gruesa.'},
   psiHigh: {l: 'Presión de gas · descarga (alta)', u: 'psi', d: 0, h: 'Presión del refrigerante a la salida del compresor.'},
@@ -1352,7 +1371,7 @@ const REF_INFO = {
 };
 const ADVICE = {
   volts: 'Voltaje fuera de rango; revisar la instalación eléctrica.',
-  amps: 'Consumo elevado del compresor; se recomienda revisión.',
+  amps: 'Corriente elevada; se recomienda revisión eléctrica del equipo.',
   tempSupply: 'El aire sale a una temperatura fuera de lo esperado; revisar limpieza y carga de refrigerante.',
   dt: 'El enfriamiento del aire está fuera de rango; revisar limpieza, flujo de aire y carga de refrigerante.',
   cfm: 'Flujo de aire fuera de rango; revisar filtros, turbina, serpentín y velocidad del ventilador.',
@@ -1399,7 +1418,7 @@ function readVal(k, l, eq) {
   if (k === 'sh' || k === 'sc') return refCalc(D, gasOf(eq))[k];
   return num(D[k]);
 }
-const READ_KEYS = ['tempSupply', 'tempReturn', 'dt', 'cfm', 'volts', 'amps', 'ampsFan', 'capMed', 'capFanMed', 'psiLow', 'psiHigh', 'tempSuct', 'sh', 'tempLiq', 'sc', 'tempAmb', 'gasAdded'];
+const READ_KEYS = ['tempSupply', 'tempReturn', 'dt', 'cfm', 'volts', 'amps', 'psiLow', 'psiHigh', 'tempSuct', 'sh', 'tempLiq', 'sc', 'tempAmb', 'gasAdded'];
 function evalItems(l, e) {
   return READ_KEYS.map(k => { const v = readVal(k, l, e); if (v == null) return null; const rr = refRange(k, e, l.data); const cls = evalCls(v, rr); return {k, p: REF_INFO[k].l, v, vt: fmt(v, REF_INFO[k].d), u: REF_INFO[k].u, ref: rangeTxt(rr, k), cls, advice: cls && cls !== 'ok' ? ADVICE[k] : ''}; }).filter(Boolean);
 }
@@ -1476,12 +1495,14 @@ function rpSystemPage(g, idx, total, folio) {
     if (D0(l).leak) t.push(`<b>Prueba de fugas:</b> ${D0(l).leak === 'Con fuga' ? '<b class="bad">fuga encontrada</b>' : esc(D0(l).leak.toLowerCase())}`);
     if (l.needsCorrective) t.push(`<b class="bad">Requiere correctivo:</b> ${esc(l.correctiveDetails || '')}`);
     const qi = (l.quote || []).filter(x => x.n); if (qi.length) t.push(`<b>Refacciones necesarias:</b> ${qi.map(itemTxt).join(' · ')}`); return t.length ? `<tr><td><b>${esc(E[i].unitId)}</b></td><td>${t.join('<br>')}</td></tr>` : ''; }).join('');
+  const INFO = [['Marca', e => e.brand], ['Modelo', e => e.model], ['Número de serie', e => e.serial], ['Capacidad', e => capOf(e) ? capOf(e) + ' TR' : ''], ['Ubicación', e => e.location]];
+  const infoRows = INFO.map(([t, fn]) => `<tr class="inf"><td>${t}</td><td class="rg"></td>${E.map(e => `<td class="n${fn(e) ? '' : ' na'}">${esc(fn(e) || '—')}</td>`).join('')}</tr>`).join('');
   const PP = pagePhotos(g), shown = PP.shown;
   const mats = L.map((l, i) => { const m = (l.materials || []).filter(x => x.n); return m.length ? `<tr><td><b>${esc(E[i].unitId)}</b></td><td>${m.map(itemTxt).join(' · ')}</td></tr>` : ''; }).join('');
   const flow = L.map((l, i) => { const cf = l.cfm || {}; if (!cfmOf(cf) || cf.rows) return ''; return `${esc(E[i].unitId)}: ${cf.mode === 'cfm' ? 'lectura directa' : `anemómetro ${esc(cf.v)} ${cf.vunit === 'ms' ? 'm/s' : 'FPM'} × ${esc(cf.w)}×${esc(cf.h)} ${cf.unit === 'cm' ? 'cm' : 'in'}`}${cf.fan ? ', vent. ' + esc(cf.fan.toLowerCase()) : ''}`; }).filter(Boolean).join(' · ');
   return `<section class="pg sysp">
     <div class="sp-h"><div><small>Sistema ${idx + 1} de ${total}</small><b>${esc(g.name)}</b><span>${esc([cap && cap + ' TR', gasOf(ref0), L[0] && fdate(L[0].date), L[0]?.kind].filter(Boolean).join(' · '))}</span></div><div class="sp-st"><span class="ev ${st}">${ST_TXT[st]}</span>${folio ? `<small>Folio ${folio}</small>` : ''}</div></div>
-    ${rows ? `<h4>Unidades y mediciones</h4><table class="tb mx"><tr><th>Medición</th><th class="rg">Rango recomendado</th>${E.map(e => `<th class="n uh">${esc(e.unitId)}<small>${esc(PART[e.role] || '')}${capOf(e) ? ' · ' + capOf(e) + ' TR' : ''}</small><small>${esc(e.location || '')}</small><small>${esc([e.brand, e.model].filter(Boolean).join(' '))}${e.serial ? ' · S/N ' + esc(e.serial) : ''}</small></th>`).join('')}</tr>${rows}</table>${flow ? `<div class="note">Flujo de aire: ${flow}.</div>` : ''}`
+    ${rows ? `<h4>Unidades y mediciones</h4><table class="tb mx"><tr><th>Concepto</th><th class="rg">Rango recomendado</th>${E.map(e => `<th class="n uh">${esc(e.unitId)}<small>${esc(PART[e.role] || '')}</small></th>`).join('')}</tr>${infoRows}<tr class="sub"><th colspan="${E.length + 2}">Mediciones</th></tr>${rows}</table>${flow ? `<div class="note">Flujo de aire: ${flow}.</div>` : ''}`
       : `<table class="tb"><tr><th>Unidad</th><th>Tipo</th><th>Marca / modelo</th><th>No. serie</th><th>Cap.</th><th>Ubicación</th></tr>${E.map(e => `<tr><td><b>${esc(e.unitId)}</b></td><td>${esc(PART[e.role] || '')}${e.type ? ' · ' + esc(e.type) : ''}</td><td>${esc([e.brand, e.model].filter(Boolean).join(' ') || '—')}</td><td>${esc(e.serial || '—')}</td><td>${capOf(e) ? capOf(e) + ' TR' : '—'}</td><td>${esc(e.location || '—')}</td></tr>`).join('')}</table>`}
     ${works ? `<h4>Trabajos realizados</h4><table class="tb lab2">${works}</table>` : ''}
     <h4>Componentes</h4>${compFlag ? `<table class="tb"><tr><th style="width:12%">Unidad</th><th style="width:30%">Componente</th><th style="width:14%">Estado</th><th>Observaciones</th></tr>${compFlag}</table>` : ''}${nGood ? `<div class="note"><span class="ev ok">${nGood} componentes revisados en buen estado</span>${compFlag ? ' (no listados).' : '.'}</div>` : (!compFlag ? '<div class="note">Sin inspección registrada.</div>' : '')}
@@ -1560,7 +1581,6 @@ function summaryText(logs) {
     const works = [...(l.works || []), l.worksOther].filter(Boolean); if (works.length) ln.push(`Trabajos: ${works.join(', ')}`);
     const ms = [D.volts && D.volts + ' V', D.amps && D.amps + ' A', D.psiLow && D.psiLow + ' psig', rc.sh != null && 'SH ' + fmt(rc.sh, 1) + ' K', a.cfm && fmt(a.cfm) + ' CFM', a.dt != null && 'ΔT ' + fmt(a.dt, 1) + ' °C'].filter(Boolean);
     if (ms.length) ln.push(`Lecturas: ${ms.join(' · ')}`);
-    if (D.capMed) ln.push(`Capacitor: ${D.capMed} µF${D.capNom ? ' (nominal ' + D.capNom + ')' : ''}`);
     if (D.errCode) { const r = errLookup(D.errCode, brandOf(e))[0]; ln.push(`Código de error: ${r?.k || String(D.errCode).toUpperCase()}${r ? ' · ' + r.t : ''}`); }
     if (D.leak) ln.push(`Prueba de fugas: ${D.leak}`);
     if (l.materials?.length) ln.push(`Material: ${l.materials.map(x => `${x.n} (${x.q || 1} ${x.u || 'pza'})`).join(', ')}`);
@@ -2191,12 +2211,12 @@ const A = {
   },
   csv(cid) {
     const c = clientById(cid), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const head = ['Unidad', 'Sistema', 'Parte', 'Unidad ligada', 'Modelo de unidad', 'Marca', 'Modelo', 'Serie', 'Ubicación', 'Capacidad TR', 'Refrigerante', 'ITM A', 'Acceso', 'Último servicio', 'Tipo servicio', 'Técnico', 'Estatus', 'Trabajos', 'Voltaje V', 'Corriente comp A', 'Corriente vent A', 'P succión psig', 'P descarga psig', 'SH K', 'SC K', 'Gas agregado kg', 'Prueba de fugas', 'Capacitor nominal µF', 'Capacitor medido µF', 'Código de error', 'Material', 'T iny °C', 'T ret °C', 'ΔT °C', 'CFM', 'CFM/TR', 'Desv. diseño %', 'Correctivo'];
+    const head = ['Unidad', 'Sistema', 'Parte', 'Unidad ligada', 'Modelo de unidad', 'Marca', 'Modelo', 'Serie', 'Ubicación', 'Capacidad TR', 'Refrigerante', 'ITM A', 'Acceso', 'Último servicio', 'Tipo servicio', 'Técnico', 'Estatus', 'Trabajos', 'Voltaje V', 'Corriente comp A', 'Corriente vent A', 'P succión psig', 'P descarga psig', 'SH K', 'SC K', 'Gas agregado kg', 'Prueba de fugas', 'Código de error', 'Material', 'T iny °C', 'T ret °C', 'ΔT °C', 'CFM', 'CFM/TR', 'Desv. diseño %', 'Correctivo'];
     const lines = [head.map(q).join(',')], r1 = v => v == null ? '' : v.toFixed(1);
     systemsOf(cid).forEach(s => s.parts.forEach(e => {
       const l = lastLog(e.id), D = l?.data || {}, a = l ? airCalc(l, e) : {}, rc = l ? refCalc(D, gasOf(e)) : {};
       const link = e.role === 'evap' ? (condOf(e)?.unitId || '') : e.role === 'cond' ? evapsOf(e.id).map(x => x.unitId).join(' ') : '';
-      lines.push([e.unitId, sysName(s), PART[e.role], link, e.type, e.brand, e.model, e.serial, e.location, capOf(e), gasOf(e), e.itm, e.access, l?.date, l?.kind, l?.tech, eqStatus(e).t, l ? [...(l.works || []), l.worksOther].filter(Boolean).join('; ') : '', D.volts, D.amps, D.ampsFan, D.psiLow, D.psiHigh, r1(rc.sh), r1(rc.sc), D.gasAdded, D.leak, D.capNom, D.capMed, D.errCode, (l?.materials || []).map(x => `${x.n} (${x.q || 1} ${x.u || 'pza'})`).join('; '), D.tempSupply, D.tempReturn, r1(a.dt), a.cfm ? Math.round(a.cfm) : '', a.perTR ? Math.round(a.perTR) : '', r1(a.dev), l?.needsCorrective ? l.correctiveDetails : ''].map(q).join(','));
+      lines.push([e.unitId, sysName(s), PART[e.role], link, e.type, e.brand, e.model, e.serial, e.location, capOf(e), gasOf(e), e.itm, e.access, l?.date, l?.kind, l?.tech, eqStatus(e).t, l ? [...(l.works || []), l.worksOther].filter(Boolean).join('; ') : '', D.volts, D.amps, D.ampsFan, D.psiLow, D.psiHigh, r1(rc.sh), r1(rc.sc), D.gasAdded, D.leak, D.errCode, (l?.materials || []).map(x => `${x.n} (${x.q || 1} ${x.u || 'pza'})`).join('; '), D.tempSupply, D.tempReturn, r1(a.dt), a.cfm ? Math.round(a.cfm) : '', a.perTR ? Math.round(a.perTR) : '', r1(a.dev), l?.needsCorrective ? l.correctiveDetails : ''].map(q).join(','));
     }));
     shareFile(`HVAC_${c.name.replace(/[^\w]+/g, '_')}_${today()}.csv`, new Blob(['﻿' + lines.join('\r\n')], {type: 'text/csv'}));
   },
