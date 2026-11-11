@@ -32,7 +32,7 @@ App para levantamiento y servicio de **minisplits** y otros equipos HVAC en siti
 - **Material utilizado:** botones rápidos (capacitor, refrigerante, filtro, cinta, contactor, tarjeta, motor, sensor, bomba, mano de obra) con cantidad y unidad.
 - **Correctivo → cotización:** al marcar *Requiere mantenimiento correctivo* se agregan las refacciones necesarias. En la pantalla del cliente aparece *N conceptos por cotizar · Hacer cotización*: capturas precios (se recuerdan), IVA opcional y sale el PDF de cotización con folio.
 - **Fotos antes y después:** dos botones directos. En el reporte salen lado a lado.
-- **Una sola firma por visita:** el cliente firma una vez (en cualquier formulario o con *Firma del cliente para la visita de hoy* en la pantalla del cliente) y queda en todos los servicios de ese cliente en el día, incluidos los que se guarden después.
+- **Una sola firma por visita:** el cliente firma una vez al terminar, con *Firma del cliente para la visita de hoy* en la pantalla del cliente. Los formularios de cada sistema ya no piden firma. La firma sale **al final del reporte**, en *Conformidad del servicio*.
 - Los campos de texto quedaron en dos: **Qué encontré** y **Qué recomiendo**.
 
 ## Ubicación del cliente
@@ -67,12 +67,13 @@ Diseño tipo hoja de cálculo: cuadrícula fina, sin rellenos de color; el color
 - **Hoja 1 · Resumen**:
   - estado general en lenguaje sencillo, hallazgos y recomendaciones;
   - datos del cliente y lista de sistemas atendidos con su resultado;
-  - cómo leer el reporte y firmas.
+  - cómo leer el reporte.
 - **Una hoja por sistema**, siempre completa:
   - tabla con las unidades lado a lado (interior/es y exterior): marca, modelo, número de serie, capacidad y ubicación, y cada medición contra su rango recomendado;
   - trabajos realizados, componentes con observaciones, notas y hasta 4 fotos (primero las de fallas y las marcadas).
   - Si el contenido no cabe, la hoja se reduce a escala para que el sistema quede en una sola página.
-- **Anexo fotográfico** al final con las demás fotos.
+- **Anexo fotográfico** con las demás fotos.
+- **Firmas al final de todo el reporte** (técnico y cliente).
 - **Cotización** en PDF desde la pantalla del cliente (`../Ejemplo cotizacion HVAC.pdf`).
 - Ejemplos de muestra: `../Ejemplo reporte HVAC.pdf` (servicio de un sistema) y `../Ejemplo reporte general HVAC.pdf` (todos los sistemas del cliente).
 - También: resumen por WhatsApp y Excel (CSV).

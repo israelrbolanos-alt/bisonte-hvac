@@ -433,6 +433,8 @@ button.row:active,.row button.m:active{background:var(--line2)}
 .rp .mx tr.inf td.na{color:#9aa1ab}
 .rp .mx tr.sub th{text-align:left;color:#19408F;border-top:2px solid #19408F}
 .rp .mx th.uh small{color:#5b6370}
+.rp .endsig{break-inside:avoid;page-break-inside:avoid;margin-top:6px}
+.rp .endsig .signs{margin-top:10px}
 .rp .thumbs figcaption{font-size:7.5pt;padding:2px 5px;border-top:1px solid #d5dae1;color:#3d4450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rp .pg .rf{margin-top:10px}
 @media print{
@@ -506,7 +508,7 @@ button.row:active,.row button.m:active{background:var(--line2)}
 <script>
 'use strict';
 /* Bitácora HVAC · Bisonte — © 2026 Bisonte. Todos los derechos reservados. */
-const APP_VERSION = '4.8.0';
+const APP_VERSION = '4.8.1';
 const SB_URL = 'https://fdpravuvrwcgozbdhuua.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkcHJhdnV2cndjZ296YmRodXVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NDc3MDYsImV4cCI6MjA4NzIyMzcwNn0.R0M8rZp9iBzrzybIQmIqPDcpAJXMjVwnORe5UmcB5Vg';
 const COMPANY = {name: 'Bisonte Ingeniería', web: 'www.bisonteingenieria.com', tel: '55 4392 2863'};
@@ -1177,15 +1179,13 @@ function vForm(key) {
   h += sec('comp', 'list', 'Estado de componentes', false, `<p class="tip" style="margin-top:0">Todos vienen como <b>Bueno</b>. Cambia solo el que tenga falla.</p>${d.components.some(c => !c.status) ? `<button type="button" class="btn sm w" onclick="A.allGood()">Marcar pendientes como “Bueno”</button>` : ''}<div id="compList" style="margin-top:4px"></div>`);
   h += sec('mat', 'tool', 'Material utilizado', !!d.materials.length, `<div id="matList"></div>${matChips('materials')}`);
   h += sec('foto', 'cam', 'Evidencia fotográfica', true, photoTools('F') + `<p class="tip">Toma la foto antes y después de la limpieza: en el reporte salen lado a lado. Usa el lápiz de cada foto para señalar la falla.</p>`);
-  h += sec('obs', 'msg', parts ? 'Observaciones de esta unidad y firma' : 'Observaciones y firma', false, `
+  h += sec('obs', 'msg', parts ? 'Observaciones de esta unidad' : 'Observaciones', false, `
     <label class="fld"><span>Qué encontré</span><textarea class="t" data-b="comments" placeholder="Estado del equipo, fallas y su causa">${esc(d.comments)}</textarea></label>
     <label class="fld" style="margin-top:10px"><span>Qué recomiendo</span><textarea class="t" style="min-height:70px" data-b="recommend" placeholder="Opcional: lo que debe hacer el cliente">${esc(d.recommend)}</textarea></label>
     <label class="chk alert" style="margin-top:12px"><input type="checkbox" data-b="needsCorrective" ${d.needsCorrective ? 'checked' : ''}> Requiere mantenimiento correctivo</label>
     <div id="corrBox" ${d.needsCorrective ? '' : 'hidden'}><textarea class="t" style="margin-top:8px" data-b="correctiveDetails" placeholder="Falla encontrada y trabajo a realizar">${esc(d.correctiveDetails)}</textarea>
       <span class="lbl">Refacciones a cotizar</span><div id="quoteList"></div>${matChips('quote')}</div>
-    <span class="lbl" style="margin-top:16px">Firma del cliente · visita del ${fdate(d.date)}</span><canvas class="sig" id="sig"></canvas>
-    <div class="row2" style="margin-top:8px"><input class="t" data-b="signName" value="${esc(d.signName)}" placeholder="Nombre de quien recibe"><button type="button" class="btn" onclick="A.sigClear()">Borrar firma</button></div>
-    <p class="tip">Una sola firma cubre todos los equipos de este cliente en el día. ${vs?.signature ? `Ya firmó ${esc(vs.signName || 'el cliente')}.` : 'Puede firmar aquí o al terminar, en la pantalla del cliente.'}</p>`);
+    <p class="tip">La firma del cliente se toma una sola vez al terminar la visita, en la pantalla del cliente (<b>Firma del cliente para la visita de hoy</b>), y sale al final del reporte.</p>`);
   if (parts && root.cur < parts.length - 1) h += `<button class="btn w big" style="margin-bottom:12px" onclick="A.sysPart(${root.cur + 1})">Siguiente: ${PART[parts[root.cur + 1].role]} ${esc(parts[root.cur + 1].unitId)} ${ic('next')}</button>`;
   h += key[0] === 'L'
     ? `<div class="savebar"><button class="btn" onclick="A.leaveForm()">Cancelar</button><button class="btn pri" onclick="A.saveLog()">${ic('check')} Guardar cambios</button></div>`
@@ -1280,7 +1280,7 @@ function updateCounts() {
   const bad = d.components.filter(c => c.status === 'Malo').length, reg = d.components.filter(c => c.status === 'Regular').length, pend = d.components.filter(c => !c.status).length;
   set('comp', bad + reg ? `${bad + reg} con falla` : pend ? `${pend} sin revisar` : 'Todo bien', bad ? 'bad' : reg ? 'warn' : pend ? '' : 'ok');
   set('foto', d.photos.length ? String(d.photos.length) : '', d.photos.length ? 'acc' : '');
-  set('obs', d.needsCorrective ? 'Correctivo' : (d.signature ? 'Firmado' : ''), d.needsCorrective ? 'bad' : (d.signature ? 'ok' : ''));
+  set('obs', d.needsCorrective ? 'Correctivo' : (d.comments || d.recommend ? 'Con nota' : ''), d.needsCorrective ? 'bad' : (d.comments || d.recommend ? 'acc' : ''));
   if (FORM.sys) { const i = document.querySelector('.part.on i'); if (i) i.className = touched(d) ? 'ok' : ''; }
 }
 function renderComps() {
@@ -1442,6 +1442,12 @@ function rpHeader(title, rows) {
   return `<div class="rp-h"><div class="co"><img src="assets/bisonte-horizontal.png" alt="Bisonte"><small>${COMPANY.name}<br>Tel. ${COMPANY.tel} · ${COMPANY.web}</small></div>
     <div class="doc"><h1>${title}</h1><table>${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table></div></div>`;
 }
+function rpSigns(groups) {
+  const sig = groups.flatMap(g => g.logs).find(l => l.signature) || {};
+  const tech = groups.find(g => g.logs.length)?.logs[0]?.tech || S.cfg.tech;
+  return `<div class="endsig"><h4>Conformidad del servicio</h4><p class="note">El cliente recibe los trabajos descritos en este reporte.</p>
+    <div class="signs"><div class="sg"><div class="im"></div><p>${esc(tech || '')}&nbsp;</p><small>Técnico responsable · ${COMPANY.name}</small></div><div class="sg"><div class="im">${/^data:image\//.test(sig.signature || '') ? `<img src="${sig.signature}" alt="Firma">` : ''}</div><p>${esc(sig.signName || '')}&nbsp;</p><small>Nombre y firma de conformidad del cliente</small></div></div></div>`;
+}
 function rpSummaryPage(groups, c, meta) {
   const items = [], recs = [], works = new Set(); let units = 0;
   groups.forEach(g => g.logs.forEach(l => {
@@ -1474,11 +1480,10 @@ function rpSummaryPage(groups, c, meta) {
     <h4>Sistemas atendidos</h4><table class="tb"><tr><th style="width:5%">#</th><th>Sistema</th><th>Unidades</th><th style="width:13%">Fecha</th><th style="width:22%">Resultado</th></tr>
       ${groups.map((g, i) => `<tr><td>${i + 1}</td><td><b>${esc(g.name)}</b></td><td>${g.parts.map(e => `${esc(e.unitId)} <span style="color:#7a828e">${esc(e.location || '')}</span>`).join('<br>')}</td><td>${g.logs.length ? fdate(g.logs[0].date) : 'Sin servicio'}</td><td>${g.logs.length ? `<span class="ev ${g.st}">${ST_TXT[g.st]}</span>` : '—'}</td></tr>`).join('')}</table>
     <div class="legend"><b>Cómo leer este reporte:</b> cada sistema tiene una hoja con sus mediciones comparadas contra el rango recomendado. <span class="ev ok">Correcto</span> dentro del rango · <span class="ev warn">Revisar</span> ligeramente fuera, se sugiere seguimiento · <span class="ev bad">Fuera de rango</span> requiere atención. TR = toneladas de refrigeración. CFM = pies cúbicos de aire por minuto. psi = libras por pulgada cuadrada.</div>
-    <div class="signs"><div class="sg"><div class="im"></div><p>${esc(tech || '')}&nbsp;</p><small>Técnico responsable · ${COMPANY.name}</small></div><div class="sg"><div class="im">${/^data:image\//.test(sig.signature || '') ? `<img src="${sig.signature}" alt="Firma">` : ''}</div><p>${esc(sig.signName || '')}&nbsp;</p><small>Nombre y firma de conformidad del cliente</small></div></div>
     ${pgFoot(meta.folio)}</section>`;
 }
 const pgFoot = folio => `<div class="rf"><span>${COMPANY.name} · ${COMPANY.web}</span><span>${folio ? 'Folio ' + folio + ' · ' : ''}Bitácora HVAC v${APP_VERSION}</span></div>`;
-function rpSystemPage(g, idx, total, folio) {
+function rpSystemPage(g, idx, total, folio, tail = '') {
   const L = g.logs, E = L.map(l => eqById(l.eqId) || {}), st = g.st;
   const stC = s => s === 'Bueno' ? 'ok' : s === 'Regular' ? 'warn' : s === 'Malo' ? 'bad' : '';
   const ref0 = g.cond || g.parts[0], cap = g.cond ? num(g.cond.capacity) : capOf(g.parts[0]);
@@ -1511,7 +1516,7 @@ function rpSystemPage(g, idx, total, folio) {
     ${notes ? `<h4>Observaciones</h4><table class="tb lab2">${notes}</table>` : ''}
     ${PP.pairs.length ? `<h4>Antes y después</h4><div class="thumbs ba">${PP.pairs.map(x => [['Antes', x.a], ['Después', x.d]].map(([t, p]) => `<figure><img src="${esc(srcOf(p))}" alt=""><figcaption><b>${t}</b> · ${esc(x.u)}${p.note ? ': ' + esc(p.note) : ''}</figcaption></figure>`).join('')).join('')}</div>` : ''}
     ${shown.length ? `<h4>${PP.pairs.length ? 'Otras fotos' : 'Evidencia fotográfica'}</h4><div class="thumbs">${shown.map(({p, u}) => `<figure><img src="${esc(srcOf(p))}" alt=""><figcaption>${esc(u)} · ${esc(p.label || '')}${p.note ? ': ' + esc(p.note) : ''}</figcaption></figure>`).join('')}</div>${PP.rest.length ? `<div class="note">${PP.rest.length} foto(s) más en el anexo fotográfico al final del reporte.</div>` : ''}` : ''}
-    ${pgFoot(folio)}</section>`;
+    ${tail}${pgFoot(folio)}</section>`;
 }
 const D0 = l => l.data || {};
 const itemTxt = x => `${esc(x.n)} (${esc(x.q || 1)} ${esc(x.u || 'pza')})`;
@@ -1536,10 +1541,10 @@ function quoteHTML(cid, Q, t) {
     <div class="signs"><div class="sg"><div class="im"></div><p>${esc(S.cfg.tech || '')}&nbsp;</p><small>Elaboró · ${COMPANY.name}</small></div><div class="sg"><div class="im"></div><p>&nbsp;</p><small>Autorización del cliente</small></div></div>
     ${pgFoot(folio)}</section></div>`;
 }
-function rpAnnex(groups, folio) {
+function rpAnnex(groups, folio, tail = '') {
   const extra = groups.flatMap(g => pagePhotos(g).rest.map(x => ({...x, g: g.name})));
-  if (!extra.length) return '';
-  return `<section class="pg annex"><h4 style="margin-top:0">Anexo fotográfico</h4><div class="pics">${extra.map(({p, u, g}) => `<figure><img src="${esc(srcOf(p))}" alt=""><figcaption>${esc(g)} · ${esc(u)} · ${esc(p.label || '')}${p.note ? ': ' + esc(p.note) : ''}</figcaption></figure>`).join('')}</div>${pgFoot(folio)}</section>`;
+  if (!extra.length) return tail ? `<section class="pg">${tail}${pgFoot(folio)}</section>` : '';
+  return `<section class="pg annex"><h4 style="margin-top:0">Anexo fotográfico</h4><div class="pics">${extra.map(({p, u, g}) => `<figure><img src="${esc(srcOf(p))}" alt=""><figcaption>${esc(g)} · ${esc(u)} · ${esc(p.label || '')}${p.note ? ': ' + esc(p.note) : ''}</figcaption></figure>`).join('')}</div>${tail}${pgFoot(folio)}</section>`;
 }
 function makeGroup(logs, parts) {
   const e0 = eqById((logs[0] || {}).eqId) || parts[0];
@@ -1547,16 +1552,21 @@ function makeGroup(logs, parts) {
   logs = [...logs].sort(partOrder);
   return {logs, parts: parts || (s ? s.parts : logs.map(l => eqById(l.eqId))), cond: s?.cond || null, name: s ? sysName(s) : (e0?.unitId || 'Equipo'), st: logs.length ? groupStatus(logs) : 'ok'};
 }
+function endPages(groups, folio) {
+  const sg = rpSigns(groups), hasAnnex = groups.some(g => pagePhotos(g).rest.length);
+  if (!groups.length) return `<section class="pg">${sg}${pgFoot(folio)}</section>`;
+  return groups.map((g, i) => rpSystemPage(g, i, groups.length, folio, !hasAnnex && i === groups.length - 1 ? sg : '')).join('') + rpAnnex(groups, folio, hasAnnex ? sg : '');
+}
 function reportHTML(logs) { // servicio de un sistema: resumen + hoja del sistema
   if (!Array.isArray(logs)) logs = [logs];
   const l0 = logs[0], c = clientById(l0.clientId) || {}, g = makeGroup(logs, logs.map(l => eqById(l.eqId)).filter(Boolean));
   const folio = 'HV-' + String(l0.sysId || l0.id).slice(-6);
-  return `<div class="rp">${rpSummaryPage([g], c, {title: 'Reporte de servicio', folio, rows: [['Folio', `<b>${folio}</b>`], ['Fecha', `${fdate(l0.date)} ${esc(l0.time || '')}`], ['Servicio', esc(l0.kind || '—')]]})}${rpSystemPage(g, 0, 1, folio)}${rpAnnex([g], folio)}</div>`;
+  return `<div class="rp">${rpSummaryPage([g], c, {title: 'Reporte de servicio', folio, rows: [['Folio', `<b>${folio}</b>`], ['Fecha', `${fdate(l0.date)} ${esc(l0.time || '')}`], ['Servicio', esc(l0.kind || '—')]]})}${endPages([g], folio)}</div>`;
 }
 function clientReportHTML(cid) { // reporte general: resumen + una hoja por sistema con su último servicio
   const c = clientById(cid), groups = systemsOf(cid).map(s => { const L = s.parts.map(e => lastLog(e.id)).filter(Boolean); return {...makeGroup(L, s.parts), name: sysName(s), cond: s.cond, parts: s.parts}; });
   const served = groups.filter(g => g.logs.length);
-  return `<div class="rp">${rpSummaryPage(groups, c, {title: 'Reporte general', folio: '', rows: [['Fecha', fdate(today())], ['Sistemas', String(groups.length)]]})}${served.map((g, i) => rpSystemPage(g, i, served.length, '')).join('')}${rpAnnex(served, '')}</div>`;
+  return `<div class="rp">${rpSummaryPage(groups, c, {title: 'Reporte general', folio: '', rows: [['Fecha', fdate(today())], ['Sistemas', String(groups.length)]]})}${endPages(served, '')}</div>`;
 }
 /* cada hoja de sistema cabe en una página carta: si se pasa, se reduce a escala */
 function fitPages(root) {

@@ -1,5 +1,5 @@
 // Bitácora HVAC · Bisonte — service worker: instalación y uso sin internet.
-const CACHE = 'bishvac-v12';
+const CACHE = 'bishvac-v13';
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
   './fonts/Poppins-Light.otf', './fonts/Poppins-Regular.otf', './fonts/Poppins-Bold.otf',
   './assets/bisonte-horizontal.png', './assets/bisonte-horizontal-blanco.png', './assets/icon-192.png', './assets/icon-512.png',
