@@ -508,7 +508,7 @@ button.row:active,.row button.m:active{background:var(--line2)}
 <script>
 'use strict';
 /* Bitácora HVAC · Bisonte — © 2026 Bisonte. Todos los derechos reservados. */
-const APP_VERSION = '4.8.1';
+const APP_VERSION = '4.9.0';
 const SB_URL = 'https://fdpravuvrwcgozbdhuua.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkcHJhdnV2cndjZ296YmRodXVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NDc3MDYsImV4cCI6MjA4NzIyMzcwNn0.R0M8rZp9iBzrzybIQmIqPDcpAJXMjVwnORe5UmcB5Vg';
 const COMPANY = {name: 'Bisonte Ingeniería', web: 'www.bisonteingenieria.com', tel: '55 4392 2863'};
@@ -575,6 +575,10 @@ const p2 = n => String(n).padStart(2, '0');
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; };
 const hhmm = () => { const d = new Date(); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
 let _nid = 0;
+const FAM = {EV: /^(EV|AC)-?(\d+)/i, CD: /^(CD|CU)-?(\d+)/i, EQ: /^(EQ)-?(\d+)/i};
+const lvlOf = v => String(v ?? '').replace(/[^\dA-Za-z]/g, '').toUpperCase();
+const mkCode = (fam, no, lvl) => `${fam}-${p2(no)}${lvlOf(lvl) ? '-N' + lvlOf(lvl) : ''}`;
+const codeNo = u => { const m = String(u || '').match(/^(?:EV|AC|CD|CU|EQ)-?(\d+)/i); return m ? +m[1] : 0; };
 const nid = () => Date.now() * 1000 + ((_nid++) % 1000);
 const ic = (n, cls = '') => `<svg class="i ${cls}"><use href="#i-${n}"/></svg>`;
 const fdate = s => { if (!s) return '—'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; };
@@ -1850,31 +1854,35 @@ const A = {
     Object.keys(S.signs || {}).forEach(k => { if (k.startsWith(id + '|')) delete S.signs[k]; });
     S.clients = S.clients.filter(x => x.id != id); save(); closeSheet(); toast('Cliente eliminado'); location.replace('#/');
   },
-  nextId(clientId, prefix, extra = []) {
+  nextNo(clientId, fam, extra = []) {
     const ids = [...S.equipments.filter(e => e.clientId == clientId).map(e => String(e.unitId)), ...extra];
-    const nums = ids.filter(u => u.toUpperCase().startsWith(prefix)).map(u => parseInt(u.slice(prefix.length)) || 0);
-    return prefix + p2((nums.length ? Math.max(...nums) : 0) + 1);
+    const nums = ids.map(u => (String(u).match(FAM[fam]) || [])[2]).filter(Boolean).map(Number);
+    return (nums.length ? Math.max(...nums) : 0) + 1;
   },
+  nextId(clientId, fam, extra = [], lvl = '') { return mkCode(fam, A.nextNo(clientId, fam, extra), lvl); },
   /* alta de minisplit: una pantalla, interior + exterior */
   msSheet(clientId, keep) {
     const k = keep || {};
-    SHEET = {clientId, brand: k.brand || '', capacity: k.capacity || '', gas: k.gas || 'R-410A', evType: k.evType || 'Minisplit pared', condLoc: k.condLoc || 'Azotea', access: k.access || '', evs: [{location: '', capacity: ''}], ids: false};
+    SHEET = {clientId, lvlEv: k.lvlEv || '', lvlCd: k.lvlCd || '', zone: k.zone || '', brand: k.brand || '', capacity: k.capacity || '', gas: k.gas || 'R-410A', evType: k.evType || 'Minisplit pared', condLoc: k.condLoc || 'Azotea', access: k.access || '', evs: [{location: '', capacity: ''}], ids: false};
     A.msDraw();
   },
   msDraw() {
     const o = SHEET, multi = o.evs.length > 1, scroll = $('#sheet .bdy')?.scrollTop || 0;
-    const evIds = []; o.evs.forEach((ev, i) => { if (!ev.unitId) ev.unitId = A.nextId(o.clientId, 'AC-', evIds); evIds.push(ev.unitId); });
-    if (!o.condUnit) o.condUnit = A.nextId(o.clientId, 'CU-');
+    const no = Math.max(A.nextNo(o.clientId, 'EV'), A.nextNo(o.clientId, 'CD'));
+    o.evs.forEach((ev, i) => { const auto = mkCode('EV', no + i, o.lvlEv); if (!ev.unitId || ev.unitId === ev.auto) ev.unitId = auto; ev.auto = auto; });
+    { const auto = mkCode('CD', no, o.lvlCd); if (!o.condUnit || o.condUnit === o.condAuto) o.condUnit = auto; o.condAuto = auto; }
+    const lvlF = (lbl, k, ph) => `<label class="fld"><span>${lbl}</span><input class="t num" inputmode="numeric" autocomplete="off" value="${esc(o[k] || '')}" placeholder="${ph}" onchange="SHEET.${k}=this.value;A.msDraw()"></label>`;
     openSheet('Agregar minisplit', `
       <div class="grid">${fld('Marca', 'brand', o.brand, {sug: 'brand', ph: 'Mirage, LG…'})}${fld('Zona / piso', 'zone', o.zone, {sug: 'zone', ph: 'Ej. Piso 2'})}</div>
       <span class="lbl">Capacidad ${multi ? 'total del sistema' : ''} (TR)</span>${chips('capacity', CAPS, o.capacity, 'class="chips sm"')}
       <span class="lbl">Refrigerante</span>${chips('gas', GASES.slice(0, 4), o.gas, 'class="chips sm"')}
       ${o.evs.map((ev, i) => `<div class="blk"><b>${ic('split', 's')} Unidad interior${multi ? ' ' + (i + 1) : ''}${multi ? `<button class="btn ghost sm" onclick="A.msDelEv(${i})">Quitar</button>` : ''}</b>
         <div class="grid">${fld('Ubicación', `evs.${i}.location`, ev.location, {full: !multi, ph: 'Recámara principal'})}${multi ? fld('Capacidad (TR)', `evs.${i}.capacity`, ev.capacity, {num: 1, ph: '1'}) : ''}</div></div>`).join('')}
+      <div class="grid" style="margin-top:8px">${lvlF(multi ? 'Nivel de los evaporadores' : 'Nivel del evaporador', 'lvlEv', 'Ej. 1')}</div>
       <button class="btn ghost sm" style="margin-top:6px" onclick="A.msAddEv()">${ic('plus', 's')} Otra unidad interior (multi-split)</button>
       <span class="lbl">Tipo de unidad interior</span>${chips('evType', TYPES.evap, o.evType, 'class="chips sm"')}
-      <div class="blk"><b>${ic('bld', 's')} Unidad exterior</b><div class="grid">${fld('Ubicación', 'condLoc', o.condLoc, {full: true, ph: 'Azotea'})}</div><span class="lbl">Acceso</span>${chips('access', ACCESS, o.access, 'class="chips sm" data-toggle')}</div>
-      <details style="margin-top:12px"${o.ids ? ' open' : ''} ontoggle="SHEET&&(SHEET.ids=this.open)"><summary class="small muted">Identificadores: ${esc(o.evs.map(e => e.unitId).join(', '))} · ${esc(o.condUnit)}</summary>
+      <div class="blk"><b>${ic('bld', 's')} Unidad exterior</b><div class="grid">${fld('Ubicación', 'condLoc', o.condLoc, {sug: 'loc', ph: 'Azotea'})}${lvlF('Nivel de la condensadora', 'lvlCd', 'Ej. 5')}</div><span class="lbl">Acceso</span>${chips('access', ACCESS, o.access, 'class="chips sm" data-toggle')}</div>
+      <details style="margin-top:12px"${o.ids ? ' open' : ''} ontoggle="SHEET&&(SHEET.ids=this.open)"><summary class="small"><b>Códigos: ${esc(o.evs.map(e => e.unitId).join(', '))} · ${esc(o.condUnit)}</b> <span class="muted">(cambiar)</span></summary>
         <div class="grid" style="margin-top:8px">${o.evs.map((ev, i) => fld(`ID interior${multi ? ' ' + (i + 1) : ''}`, `evs.${i}.unitId`, ev.unitId)).join('')}${fld('ID exterior', 'condUnit', o.condUnit)}</div></details>`,
       `<button class="btn" onclick="A.msSave(true)">Guardar y otro</button><button class="btn pri" onclick="A.msSave()">Guardar</button>`);
     const b = $('#sheet .bdy'); if (b) b.scrollTop = scroll;
@@ -1886,30 +1894,32 @@ const A = {
     if (!o.evs.some(ev => ev.location.trim())) return toast('Escribe la ubicación de la unidad interior', 'bad');
     const base = {clientId: o.clientId, brand: o.brand.trim(), gas: o.gas, model: '', serial: '', key: '', notes: '', cfmDesign: '', photos: [], year: '', zone: (o.zone || '').trim()};
     const cap = String(o.capacity || '').replace(',', '.');
-    const cd = {...base, id: nid(), role: 'cond', type: n > 1 ? 'Multi-split' : 'Condensadora', unitId: (o.condUnit || '').trim() || A.nextId(o.clientId, 'CU-'), location: o.condLoc, capacity: cap, itm: '', volt: '220', polos: '2', access: o.access};
+    const cd = {...base, id: nid(), role: 'cond', type: n > 1 ? 'Multi-split' : 'Condensadora', unitId: (o.condUnit || '').trim() || A.nextId(o.clientId, 'CD', [], o.lvlCd), location: o.condLoc, capacity: cap, itm: '', volt: '220', polos: '2', access: o.access};
     S.equipments.push(cd);
-    o.evs.forEach(ev => S.equipments.push({...base, id: nid(), role: 'evap', condId: cd.id, type: o.evType, unitId: (ev.unitId || '').trim() || A.nextId(o.clientId, 'AC-'), location: ev.location.trim(), capacity: n === 1 ? cap : String(ev.capacity || '').replace(',', '.'), itm: '', volt: '', polos: '', access: ''}));
+    o.evs.forEach(ev => S.equipments.push({...base, id: nid(), role: 'evap', condId: cd.id, type: o.evType, unitId: (ev.unitId || '').trim() || A.nextId(o.clientId, 'EV', [], o.lvlEv), location: ev.location.trim(), capacity: n === 1 ? cap : String(ev.capacity || '').replace(',', '.'), itm: '', volt: '', polos: '', access: ''}));
     save(); toast(`Minisplit agregado: ${o.evs.map(e => e.unitId).join(', ')} + ${cd.unitId}`, 'ok');
-    if (again) { const keep = {brand: o.brand, capacity: o.capacity, gas: o.gas, evType: o.evType, condLoc: o.condLoc, access: o.access}; render(); A.msSheet(o.clientId, keep); }
+    if (again) { const keep = {brand: o.brand, capacity: o.capacity, gas: o.gas, evType: o.evType, condLoc: o.condLoc, access: o.access, lvlEv: o.lvlEv, lvlCd: o.lvlCd, zone: o.zone}; render(); A.msSheet(o.clientId, keep); }
     else { closeSheet(); render(); }
   },
   /* alta masiva: N minisplits iguales, cada uno con su interior y su exterior, misma numeración */
   bulkSheet(clientId) {
     const zs = [...new Set(S.equipments.filter(e => e.clientId == clientId).map(e => e.zone).filter(Boolean))];
-    SHEET = {clientId, n: '1', zone: '', zonesKnown: zs, brand: '', capacity: '', gas: 'R-410A', evType: 'Minisplit pared', condLoc: 'Azotea', locBase: 'Oficina', each: false, locs: []};
+    SHEET = {clientId, n: '1', lvlEv: '', lvlCd: '', zone: '', zonesKnown: zs, brand: '', capacity: '', gas: 'R-410A', evType: 'Minisplit pared', condLoc: 'Azotea', locBase: 'Oficina', each: false, locs: []};
     A.bulkDraw();
   },
   bulkStart(clientId) {
-    const nums = S.equipments.filter(e => e.clientId == clientId && /^(AC|CU)-/i.test(e.unitId)).map(e => parseInt(String(e.unitId).slice(3)) || 0);
-    return (nums.length ? Math.max(...nums) : 0) + 1;
+    return Math.max(A.nextNo(clientId, 'EV'), A.nextNo(clientId, 'CD'));
   },
   bulkDraw() {
     const o = SHEET, n = Math.max(1, Math.min(80, parseInt(o.n) || 1)), st = A.bulkStart(o.clientId), scroll = $('#sheet .bdy')?.scrollTop || 0;
     const locOf = i => (o.each && o.locs[i] != null && o.locs[i] !== '') ? o.locs[i] : (o.locBase.trim() ? `${o.locBase.trim()} ${i + 1}` : '');
     const last = st + n - 1;
+    const lvlB = (lbl, k, ph) => `<label class="fld"><span>${lbl}</span><input class="t num" inputmode="numeric" autocomplete="off" value="${esc(o[k] || '')}" placeholder="${ph}" onchange="SHEET.${k}=this.value;A.bulkDraw()"></label>`;
+    const pv = i => `<b>${esc(mkCode('EV', i, o.lvlEv))}</b> + <b>${esc(mkCode('CD', i, o.lvlCd))}</b>`;
     openSheet('Agregar minisplits', `
       <div class="grid"><label class="fld"><span>¿Cuántos minisplits?</span><input class="t num" inputmode="numeric" value="${esc(o.n)}" onchange="SHEET.n=this.value;A.bulkDraw()"></label>${fld('Zona / piso', 'zone', o.zone, {sug: 'zone', ph: 'Ej. Piso 2'})}</div>
       <div class="chips sm" style="margin-top:8px">${[1, 4, 8, 12, 24].map(x => `<button class="chip${n === x ? ' on' : ''}" onclick="SHEET.n='${x}';A.bulkDraw()">${x}</button>`).join('')}</div>
+      <div class="grid" style="margin-top:12px">${lvlB('Nivel de los evaporadores', 'lvlEv', 'Ej. 1')}${lvlB('Nivel de las condensadoras', 'lvlCd', 'Ej. 5')}</div>
       <div class="grid" style="margin-top:12px">${fld('Marca', 'brand', o.brand, {sug: 'brand', ph: 'Mirage, LG…'})}${fld('Ubicación exterior', 'condLoc', o.condLoc, {sug: 'loc', ph: 'Azotea'})}</div>
       <span class="lbl">Capacidad de cada uno (TR)</span>${chips('capacity', CAPS, o.capacity, 'class="chips sm"')}
       <span class="lbl">Refrigerante</span>${chips('gas', GASES.slice(0, 4), o.gas, 'class="chips sm"')}
@@ -1919,7 +1929,7 @@ const A = {
         <label class="chk" style="margin-top:8px"><input type="checkbox" ${o.each ? 'checked' : ''} onchange="SHEET.each=this.checked;A.bulkDraw()"> Escribir la ubicación de cada uno</label>
         ${o.each ? `<div class="grid" style="margin-top:8px">${Array.from({length: n}, (_, i) => `<label class="fld"><span>${p2(st + i)}</span><input class="t" data-b="locs.${i}" value="${esc(o.locs[i] ?? locOf(i))}"></label>`).join('')}</div>` : ''}</div>
       <div class="bulkprev">Se crearán <b>${n} minisplit${n > 1 ? 's' : ''}</b>${o.zone ? ` en <b>${esc(o.zone)}</b>` : ''}, cada uno con su unidad interior y exterior:<br>
-        <b>${p2(st)}</b> AC-${p2(st)} + CU-${p2(st)} · ${esc(locOf(0) || 'sin ubicación')}${n > 1 ? `<br>…<br><b>${p2(last)}</b> AC-${p2(last)} + CU-${p2(last)} · ${esc(locOf(n - 1) || 'sin ubicación')}` : ''}</div>
+        ${pv(st)} · ${esc(locOf(0) || 'sin ubicación')}${n > 1 ? `<br>…<br>${pv(last)} · ${esc(locOf(n - 1) || 'sin ubicación')}` : ''}<br><small class="muted">EV = evaporador (interior) · CD = condensadora (exterior) · N = nivel</small></div>
       <p class="tip">Para un multi-split (una exterior con varias interiores) usa “Otro equipo → Multi-split”.</p>`,
       `<button class="btn" onclick="closeSheet()">Cancelar</button><button class="btn pri" onclick="A.bulkSave()">Crear ${n}</button>`);
     const b = $('#sheet .bdy'); if (b) b.scrollTop = scroll;
@@ -1930,9 +1940,9 @@ const A = {
     const base = {clientId: o.clientId, brand: o.brand.trim(), gas: o.gas, model: '', serial: '', key: '', notes: '', cfmDesign: '', photos: [], year: '', zone, capacity: cap};
     for (let i = 0; i < n; i++) {
       const no = p2(st + i), loc = (o.each && o.locs[i]) ? String(o.locs[i]).trim() : (o.locBase.trim() ? `${o.locBase.trim()} ${i + 1}` : '');
-      const cd = {...base, id: nid(), role: 'cond', type: 'Condensadora', unitId: 'CU-' + no, location: o.condLoc, itm: '', volt: '220', polos: '2', access: ''};
+      const cd = {...base, id: nid(), role: 'cond', type: 'Condensadora', unitId: mkCode('CD', st + i, o.lvlCd), location: o.condLoc, itm: '', volt: '220', polos: '2', access: ''};
       S.equipments.push(cd);
-      S.equipments.push({...base, id: nid(), role: 'evap', condId: cd.id, type: o.evType, unitId: 'AC-' + no, location: loc, itm: '', volt: '', polos: '', access: ''});
+      S.equipments.push({...base, id: nid(), role: 'evap', condId: cd.id, type: o.evType, unitId: mkCode('EV', st + i, o.lvlEv), location: loc, itm: '', volt: '', polos: '', access: ''});
     }
     save(); closeSheet(); toast(`${n} minisplit${n > 1 ? 's' : ''} agregado${n > 1 ? 's' : ''}`, 'ok'); render();
   },
@@ -1982,7 +1992,7 @@ const A = {
   eqSheet(id, clientId, preset) {
     const e = id ? eqById(id) : null;
     SHEET = e ? {...e} : {clientId, role: 'evap', unitId: '', key: '', type: '', brand: '', model: '', serial: '', location: '', capacity: '', gas: '', itm: '', polos: '', volt: '', cfmDesign: '', condId: '', year: '', access: '', notes: '', photos: [], ...(preset || {})};
-    if (!e && !SHEET.unitId) SHEET.unitId = A.nextId(SHEET.clientId, SHEET.role === 'cond' ? 'CU-' : SHEET.role === 'paq' ? 'EQ-' : 'AC-');
+    if (!e && !SHEET.unitId) SHEET.unitId = A.nextId(SHEET.clientId, SHEET.role === 'cond' ? 'CD' : SHEET.role === 'paq' ? 'EQ' : 'EV');
     SHEET._title = e ? 'Editar unidad' : (preset?.unitId ? 'Duplicar unidad' : SHEET.role === 'paq' ? 'Nuevo equipo' : 'Nueva ' + ROLE_LONG[SHEET.role].toLowerCase());
     A.eqDraw();
   },
@@ -2008,7 +2018,7 @@ const A = {
   eqSave() {
     const o = SHEET, link = o.linkEvap;
     delete o._title; delete o.linkEvap;
-    o.unitId = (o.unitId || '').trim() || A.nextId(o.clientId, o.role === 'cond' ? 'CU-' : 'AC-');
+    o.unitId = (o.unitId || '').trim() || A.nextId(o.clientId, o.role === 'cond' ? 'CD' : o.role === 'paq' ? 'EQ' : 'EV');
     o.capacity = String(o.capacity || '').replace(',', '.');
     if (o.role !== 'evap') o.condId = '';
     if (o.condId) o.condId = +o.condId;
@@ -2025,7 +2035,8 @@ const A = {
   addCond(evId) { const ev = eqById(evId); A.eqSheet(null, ev.clientId, {role: 'cond', linkEvap: ev.id, brand: ev.brand || '', location: 'Azotea', gas: 'R-410A'}); },
   eqDup(id) {
     const e = eqById(id);
-    const next = e.unitId.replace(/(\d+)(?!.*\d)/, n => String(+n + 1).padStart(n.length, '0'));
+    const fam = Object.keys(FAM).find(k => FAM[k].test(e.unitId)), lv = (String(e.unitId).match(/-N([0-9A-Z]+)$/i) || [])[1] || '';
+    const next = fam ? mkCode(fam, A.nextNo(e.clientId, fam), lv) : e.unitId.replace(/(\d+)(?!.*\d)/, n => String(+n + 1).padStart(n.length, '0'));
     const {id: _, photos: __, ...rest} = e;
     A.eqSheet(null, e.clientId, {...rest, unitId: next === e.unitId ? e.unitId + '-2' : next, serial: '', photos: []});
   },

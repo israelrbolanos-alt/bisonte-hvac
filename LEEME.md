@@ -1,9 +1,9 @@
-# Bitácora HVAC 4.8 · Bisonte
+# Bitácora HVAC 4.9 · Bisonte
 
 App para levantamiento y servicio de **minisplits** y otros equipos HVAC en sitio. Se instala en **iPhone y Android** como app (PWA) y **funciona sin internet**.
 
 ## Minisplits: control y llenado (pensado para muchos equipos, por ejemplo 24 en oficinas)
-- **Un renglón por minisplit:** número, ubicación y estado del día. La unidad interior y la exterior van juntas (AC-05 · CU-05).
+- **Un renglón por minisplit:** número, ubicación y estado del día. La unidad interior y la exterior van juntas (EV-05-N1 · CD-05-N5).
   - Estados: **Pendiente** (gris), **En proceso** (ámbar), **Terminado** con hora (verde) y **Falla** (rojo).
   - El ícono de la derecha abre la ficha del equipo.
 - **Agrupados por zona o piso**, con avance por zona ("Piso 2 · 6 de 12").
@@ -12,7 +12,7 @@ App para levantamiento y servicio de **minisplits** y otros equipos HVAC en siti
 - Al tocar un minisplit se abre su servicio. Si ya está terminado, se abre su reporte.
 - **Agregar minisplits (alta masiva):**
   - indica cuántos (24), zona o piso, marca, capacidad, refrigerante, tipo y ubicación de la unidad exterior;
-  - se crean con la misma numeración para interior y exterior (AC-01 + CU-01 … AC-24 + CU-24);
+  - se crean con la misma numeración para interior y exterior, con su nivel: **EV-01-N1 + CD-01-N5** … (EV = evaporador, CD = condensadora, N = nivel o piso donde está la unidad);
   - las ubicaciones se numeran solas (Oficina 1, Oficina 2…) o puedes escribir cada una.
 - **Llenado en ronda:**
   - el formulario indica en qué equipo vas ("Piso 1 · 5 de 24");
@@ -21,6 +21,9 @@ App para levantamiento y servicio de **minisplits** y otros equipos HVAC en siti
 - Cada minisplit tiene pestañas **Interior / Exterior**. Fecha, técnico y firma se capturan una vez.
 - **Administrar unidades:** el ícono de lápiz de cada minisplit (o el botón en la ficha) muestra sus unidades. Desde ahí puedes abrir la ficha de cada una, **Quitar** una unidad interior (sacarla del sistema para dejarla suelta, o eliminarla con su historial), agregar unidades o eliminar el sistema completo.
 - **Otro equipo:** multi-split (una exterior con varias interiores), equipo completo (paquete, ventana…) o unidad interior suelta.
+
+## Códigos de los equipos
+**CD-01-N5 / EV-01-N1** = condensadora 01 en el nivel 5, conectada al evaporador 01 en el nivel 1. Al dar de alta minisplits se piden el *nivel de los evaporadores* y el *nivel de las condensadoras*; el número es el mismo para las dos unidades del sistema. Si dejas el nivel vacío, el código queda sin la parte -N. Los códigos se pueden cambiar a mano en la ficha de cada equipo.
 
 ## En sitio: lo que pide un técnico de campo (v4.6)
 - **Modo Rápido / Completo** (arriba del formulario). *Rápido* deja solo lo esencial del preventivo: temperaturas, CFM directo, voltaje, corriente, succión, gas agregado y prueba de fugas. *Completo* agrega anemómetro, velocidad del ventilador, descarga y temperaturas de tubería. Lo capturado no se pierde al cambiar de modo.
